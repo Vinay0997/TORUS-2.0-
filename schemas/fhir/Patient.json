@@ -1,0 +1,9 @@
+{
+  "resourceType": "Patient",
+  "fields": {
+    "id": "string",
+    "birthDate": "string",
+    "gender": "string",
+    "riskCategory": "string"
+  }
+}
