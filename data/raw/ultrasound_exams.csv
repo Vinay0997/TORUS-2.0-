@@ -1,0 +1,21 @@
+exam_id,patient_id,device_id,exam_type,exam_timestamp,image_quality_score,outcome_label
+1,1,3,abdominal,2025-01-01 08:00:00,0.82,normal
+2,2,5,cardiac,2025-01-01 08:15:00,0.61,follow_up_required
+3,3,2,obstetric,2025-01-01 08:30:00,0.91,normal
+4,4,7,vascular,2025-01-01 08:45:00,0.74,normal
+5,5,1,abdominal,2025-01-01 09:00:00,0.88,normal
+6,6,4,cardiac,2025-01-01 09:15:00,0.55,follow_up_required
+7,7,6,vascular,2025-01-01 09:30:00,0.79,normal
+8,8,8,abdominal,2025-01-01 09:45:00,0.58,follow_up_required
+9,9,2,obstetric,2025-01-01 10:00:00,0.93,normal
+10,10,5,cardiac,2025-01-01 10:15:00,0.76,normal
+11,11,3,vascular,2025-01-01 10:30:00,0.69,normal
+12,12,7,abdominal,2025-01-01 10:45:00,0.87,normal
+13,13,4,cardiac,2025-01-01 11:00:00,0.52,follow_up_required
+14,14,1,obstetric,2025-01-01 11:15:00,0.90,normal
+15,15,6,vascular,2025-01-01 11:30:00,0.73,normal
+16,16,8,abdominal,2025-01-01 11:45:00,0.57,follow_up_required
+17,17,2,cardiac,2025-01-01 12:00:00,0.81,normal
+18,18,5,obstetric,2025-01-01 12:15:00,0.89,normal
+19,19,3,vascular,2025-01-01 12:30:00,0.60,follow_up_required
+20,20,7,abdominal,2025-01-01 12:45:00,0.77,normal
