@@ -1,5 +1,7 @@
 # TORUS 2.0 — Remote Ultrasound AI Platform
 
+🔗 **[Live Dashboard](https://torus-anomaly-dashboard.streamlit.app)** — interactive anomaly detection results, no setup required.
+
 TORUS 2.0 is an end-to-end data engineering and machine learning pipeline that simulates a remote ultrasound telehealth platform: synthetic patient, exam, and device telemetry data flowing through an orchestrated ETL pipeline into a data warehouse, with automated anomaly detection on device health metrics.
 
 ## Architecture
@@ -23,6 +25,12 @@ TORUS 2.0 is an end-to-end data engineering and machine learning pipeline that s
                               │  telemetry_anomalies.csv│
                               │  device timeseries PNGs) │
                               └───────────────────────┘
+                                         │
+                                         ▼
+                              ┌───────────────────┐
+                              │ Streamlit Dashboard      │
+                              │ (live, interactive)      │
+                              └───────────────────────┘
 ```
 
 ## What it does
@@ -31,6 +39,7 @@ TORUS 2.0 is an end-to-end data engineering and machine learning pipeline that s
 2. **Orchestrated ETL** — An Apache Airflow DAG (`torus_etl_pipeline`) extracts, validates, and loads each dataset into a Postgres/Redshift-style warehouse schema, running on a schedule inside Docker.
 3. **Anomaly detection** — After telemetry loads, a `detect_anomalies` task automatically runs an Isolation Forest model over rolling-window CPU/memory/error features to flag anomalous device behavior, without any manual script execution.
 4. **Automated reporting** — Each run produces a per-device anomaly summary CSV, a full scored telemetry CSV, and time-series charts highlighting flagged anomalies (e.g. device DEV-002).
+5. **Interactive dashboard** — A Streamlit app lets anyone browse fleet-wide anomaly rates and drill into per-device telemetry time series, live in the browser.
 
 ## Project structure
 
@@ -39,6 +48,7 @@ TORUS 2.0 is an end-to-end data engineering and machine learning pipeline that s
 | `data_generators/` | Scripts generating synthetic patients, exams, and device telemetry |
 | `airflow_docker/` | Docker Compose setup, DAG definitions, and Airflow configuration |
 | `anomaly_detection/` | Standalone Isolation Forest anomaly detection script |
+| `dashboard/` | Streamlit dashboard app (`app.py`) for interactive anomaly browsing |
 | `warehouse/` | Redshift/Postgres DDL for the warehouse schema |
 | `schemas/`, `sql/` | Supporting schema and SQL definitions |
 | `data/raw/`, `data/processed/` | Generated raw data and anomaly detection outputs/charts |
@@ -46,9 +56,22 @@ TORUS 2.0 is an end-to-end data engineering and machine learning pipeline that s
 
 ## Tech stack
 
-Python, Apache Airflow 3, Docker & Docker Compose, PostgreSQL/Redshift, scikit-learn (Isolation Forest), Plotly, Pandas, NumPy.
+Python, Apache Airflow 3, Docker & Docker Compose, PostgreSQL/Redshift, scikit-learn (Isolation Forest), Streamlit, Plotly, Pandas, NumPy.
 
-## Setup
+## Dashboard
+
+The live dashboard is deployed on Streamlit Community Cloud: **[torus-anomaly-dashboard.streamlit.app](https://torus-anomaly-dashboard.streamlit.app)**
+
+To run it locally instead:
+
+```bash
+pip install -r dashboard/requirements.txt
+streamlit run dashboard/app.py
+```
+
+It reads directly from `data/processed/telemetry_anomalies.csv` and `anomaly_summary.csv`, letting you filter by device and date range, and toggle an "anomalies only" view over live CPU/memory time-series charts.
+
+## Setup (full pipeline)
 
 ### 1. Clone and configure
 
@@ -84,5 +107,4 @@ The Isolation Forest model correctly and consistently flags **DEV-002** as the h
 ## Roadmap
 
 - [ ] Alerting layer (Slack/email) when a device's anomaly rate crosses a threshold
-- [ ] Interactive Streamlit dashboard for browsing anomaly charts and summaries
 - [ ] GitHub Actions CI to lint/test the DAG and data generators on every push
