@@ -1,23 +1,33 @@
-# data_generators/generate_patients.py
+"""
+generate_patients.py
+Generates synthetic patient records for the TORUS-2.0 project.
+Saves output to data/raw/patients.csv
+"""
+
 import pandas as pd
 import numpy as np
 
-def generate_patients(n=1000, seed=42):
-    rng = np.random.default_rng(seed)
-    patient_ids = np.arange(1, n+1)
+def generate_patients(n_patients: int = 300, seed: int = 42) -> pd.DataFrame:
+    np.random.seed(seed)
 
-    ages = rng.integers(18, 90, size=n)
-    sexes = rng.choice(["M", "F"], size=n)
-    risk_categories = rng.choice(["low", "medium", "high"], p=[0.6, 0.3, 0.1], size=n)
-
-    df = pd.DataFrame({
-        "patient_id": patient_ids,
-        "age": ages,
-        "sex": sexes,
-        "risk_category": risk_categories,
+    patients_df = pd.DataFrame({
+        "patient_id": range(1, n_patients + 1),
+        "age": np.random.randint(18, 85, n_patients),
+        "sex": np.random.choice(["M", "F"], n_patients),
+        "risk_category": np.random.choice(
+            ["low", "medium", "high"], n_patients, p=[0.5, 0.35, 0.15]
+        ),
     })
-    return df
+    return patients_df
+
 
 if __name__ == "__main__":
-    df = generate_patients(n=2000)
-    df.to_csv("data/raw/patients.csv", index=False)
+    import os
+
+    df = generate_patients(n_patients=300)
+
+    os.makedirs("data/raw", exist_ok=True)
+    output_path = "data/raw/patients.csv"
+    df.to_csv(output_path, index=False)
+
+    print(f"Generated {len(df)} patient records -> {output_path}")

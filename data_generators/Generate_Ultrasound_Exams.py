@@ -1,50 +1,79 @@
-# data_generators/generate_ultrasound_exams.py
+"""
+generate_ultrasound_exams.py
+Generates synthetic ultrasound exam metadata for the TORUS-2.0 project.
+Depends on data/raw/patients.csv existing (run generate_patients.py first).
+Saves output to data/raw/ultrasound_exams.csv
+"""
+
 import pandas as pd
 import numpy as np
+from datetime import datetime, timedelta
+import os
 
-def generate_exams(n=10000, seed=42):
-    rng = np.random.default_rng(seed)
 
-    patient_df = pd.read_csv("data/raw/patients.csv")
-    patient_ids = patient_df["patient_id"].values
-    risk_by_patient = dict(zip(patient_df["patient_id"], patient_df["risk_category"]))
+def generate_exams(patients_df: pd.DataFrame, n_exams: int = 800, seed: int = 42) -> pd.DataFrame:
+    np.random.seed(seed)
 
-    exam_ids = np.arange(1, n+1)
-    device_ids = rng.integers(1, 21, size=n)  # 20 devices
-    exam_types = rng.choice(
-        ["abdominal", "cardiac", "obstetric", "vascular"],
-        size=n
-    )
-    timestamps = pd.date_range("2025-01-01", periods=n, freq="min")
+    devices = ["DEV-001", "DEV-002", "DEV-003", "DEV-004"]
+    exam_types = ["abdominal", "cardiac", "obstetric", "vascular"]
 
-    chosen_patients = rng.choice(patient_ids, size=n)
-    quality_scores = rng.normal(loc=0.8, scale=0.1, size=n).clip(0, 1)
+    patient_ids_for_exams = np.random.choice(patients_df["patient_id"], n_exams)
+
+    start_date = datetime(2025, 1, 1)
+    exam_timestamps = [
+        start_date + timedelta(days=int(x), hours=int(np.random.randint(0, 24)))
+        for x in np.random.randint(0, 500, n_exams)
+    ]
+
+    # Merge risk_category back in in order to bias outcome probabilities realistically
+    risk_lookup = patients_df.set_index("patient_id")["risk_category"].to_dict()
+    age_lookup = patients_df.set_index("patient_id")["age"].to_dict()
 
     outcomes = []
-    for pid, q in zip(chosen_patients, quality_scores):
-        risk = risk_by_patient[pid]
-        base_prob = 0.1
-        if risk == "medium":
-            base_prob = 0.2
-        elif risk == "high":
-            base_prob = 0.35
-        if q < 0.6:
-            base_prob += 0.15
+    for pid in patient_ids_for_exams:
+        risk = risk_lookup.get(pid, "low")
+        age = age_lookup.get(pid, 40)
 
-        outcome = "follow_up_required" if rng.random() < base_prob else "normal"
+        # Higher risk category and older age -> higher chance of follow_up_required
+        followup_prob = 0.15
+        if risk == "medium":
+            followup_prob = 0.30
+        elif risk == "high":
+            followup_prob = 0.55
+        if age > 60:
+            followup_prob += 0.10
+
+        followup_prob = min(followup_prob, 0.85)
+        remaining = 1 - followup_prob
+        outcome = np.random.choice(
+            ["follow_up_required", "normal", "inconclusive"],
+            p=[followup_prob, remaining * 0.8, remaining * 0.2]
+        )
         outcomes.append(outcome)
 
-    df = pd.DataFrame({
-        "exam_id": exam_ids,
-        "patient_id": chosen_patients,
-        "device_id": device_ids,
-        "exam_type": exam_types,
-        "exam_timestamp": timestamps,
-        "image_quality_score": quality_scores,
+    exams_df = pd.DataFrame({
+        "exam_id": range(1, n_exams + 1),
+        "patient_id": patient_ids_for_exams,
+        "device_id": np.random.choice(devices, n_exams),
+        "exam_type": np.random.choice(exam_types, n_exams),
+        "exam_timestamp": exam_timestamps,
+        "image_quality_score": np.round(np.random.uniform(0.5, 1.0, n_exams), 2),
         "outcome_label": outcomes,
     })
-    return df
+    return exams_df
+
 
 if __name__ == "__main__":
-    df = generate_exams(n=30000)
-    df.to_csv("data/raw/ultrasound_exams.csv", index=False)
+    patients_path = "data/raw/patients.csv"
+    if not os.path.exists(patients_path):
+        raise FileNotFoundError(
+            f"'{patients_path}' not found. Run generate_patients.py first."
+        )
+
+    patients_df = pd.read_csv(patients_path)
+    exams_df = generate_exams(patients_df, n_exams=800)
+
+    output_path = "data/raw/ultrasound_exams.csv"
+    exams_df.to_csv(output_path, index=False)
+
+    print(f"Generated {len(exams_df)} exam records -> {output_path}")

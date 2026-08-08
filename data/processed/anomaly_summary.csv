@@ -1,0 +1,5 @@
+device_id,total_readings,anomaly_count,anomaly_rate_pct
+DEV-002,4320,761,17.62
+DEV-003,4320,47,1.09
+DEV-004,4320,34,0.79
+DEV-001,4320,22,0.51
