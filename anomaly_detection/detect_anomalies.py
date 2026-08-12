@@ -26,7 +26,12 @@ from urllib.parse import quote_plus
 # Config - adjust connection string to match your local Postgres setup
 # ---------------------------------------------------------------------
 DB_USER = os.getenv("TORUS_DB_USER", "postgres")
-DB_PASSWORD = os.getenv("TORUS_DB_PASSWORD", "Yaniv305@#")
+DB_PASSWORD = os.getenv("TORUS_DB_PASSWORD")
+if not DB_PASSWORD:
+    raise RuntimeError(
+        "TORUS_DB_PASSWORD environment variable is not set.\n"
+        'Set it before running, e.g.: $env:TORUS_DB_PASSWORD = "your_new_password_here"'
+    )
 DB_HOST = os.getenv("TORUS_DB_HOST", "localhost")
 DB_PORT = os.getenv("TORUS_DB_PORT", "5432")
 DB_NAME = os.getenv("TORUS_DB_NAME", "TORUS_db")
