@@ -19,8 +19,7 @@ import streamlit as st
 # Force the token into the environment before any other imports/caching runs
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
 
-# Temporary debug line - remove after confirming this works
-st.write(f"Token loaded: {len(os.environ.get('HUGGINGFACEHUB_API_TOKEN', ''))} characters")
+
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ask_question import build_chain, HF_MODEL_REPO_ID
