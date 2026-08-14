@@ -3,6 +3,7 @@ langchain
 langchain-community
 langchain-core
 langchain-text-splitters
-langchain-huggingface
+langchain-huggingface>=0.1.2
+huggingface_hub>=0.30
 sentence-transformers
 faiss-cpu
