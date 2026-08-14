@@ -1,8 +1,9 @@
 # TORUS 2.0 — Remote Ultrasound AI Platform
 
 🔗 **[Live Dashboard](https://torus-anomaly-dashboard.streamlit.app)** — interactive anomaly detection results, no setup required.
+🔗 **[Live RAG Assistant](https://torus-rag-assistant.streamlit.app/)** — ask questions about the TORUS architecture, FHIR/HL7 concepts, and the ML models in plain language.
 
-TORUS 2.0 is an end-to-end data engineering and machine learning pipeline that simulates a remote ultrasound telehealth platform: synthetic patient, exam, and device telemetry data flowing through an orchestrated ETL pipeline into a data warehouse, with automated anomaly detection on device health metrics.
+TORUS 2.0 is an end-to-end data engineering and machine learning pipeline that simulates a remote ultrasound telehealth platform: synthetic patient, exam, and device telemetry data flowing through an orchestrated ETL pipeline into a data warehouse, with automated anomaly detection on device health metrics, a follow-up prediction model, and a retrieval-augmented generation assistant for exploring the project itself.
 
 ## Architecture
 
@@ -40,6 +41,8 @@ TORUS 2.0 is an end-to-end data engineering and machine learning pipeline that s
 3. **Anomaly detection** — After telemetry loads, a `detect_anomalies` task automatically runs an Isolation Forest model over rolling-window CPU/memory/error features to flag anomalous device behavior, without any manual script execution.
 4. **Automated reporting** — Each run produces a per-device anomaly summary CSV, a full scored telemetry CSV, and time-series charts highlighting flagged anomalies (e.g. device DEV-002).
 5. **Interactive dashboard** — A Streamlit app lets anyone browse fleet-wide anomaly rates and drill into per-device telemetry time series, live in the browser.
+6. **Follow-up prediction** — A trained model predicts patient follow-up outcomes, with experiments tracked via MLflow.
+7. **RAG assistant** — A chatbot answers questions about the project's own architecture and documentation, grounded strictly in a FAISS-indexed knowledge base.
 
 ## Project structure
 
@@ -49,14 +52,17 @@ TORUS 2.0 is an end-to-end data engineering and machine learning pipeline that s
 | `airflow_docker/` | Docker Compose setup, DAG definitions, and Airflow configuration |
 | `anomaly_detection/` | Standalone Isolation Forest anomaly detection script |
 | `dashboard/` | Streamlit dashboard app (`app.py`) for interactive anomaly browsing |
+| `rag_assistant/` | RAG chatbot: FAISS index builder, LangChain RAG chain, and Streamlit chat UI |
+| `models/` | Trained model artifacts |
 | `warehouse/` | Redshift/Postgres DDL for the warehouse schema |
 | `schemas/`, `sql/` | Supporting schema and SQL definitions |
 | `data/raw/`, `data/processed/` | Generated raw data and anomaly detection outputs/charts |
-| `04_build_modeling_dataset.ipynb`, `05_train_followup_prediction.ipynb` | Modeling notebooks for downstream ML tasks |
+| `docs/` | Project documentation, source material for the RAG assistant's knowledge base |
+| `04_build_modeling_dataset.ipynb`, `05_train_followup_prediction.ipynb` | Modeling notebooks for the follow-up prediction task |
 
 ## Tech stack
 
-Python, Apache Airflow 3, Docker & Docker Compose, PostgreSQL/Redshift, scikit-learn (Isolation Forest), Streamlit, Plotly, Pandas, NumPy.
+Python, Apache Airflow 3, Docker & Docker Compose, PostgreSQL/Redshift, scikit-learn (Isolation Forest), Streamlit, Plotly, Pandas, NumPy, LangChain, Hugging Face Inference Providers, FAISS, sentence-transformers, MLflow.
 
 ## Dashboard
 
@@ -70,6 +76,32 @@ streamlit run dashboard/app.py
 ```
 
 It reads directly from `data/processed/telemetry_anomalies.csv` and `anomaly_summary.csv`, letting you filter by device and date range, and toggle an "anomalies only" view over live CPU/memory time-series charts.
+
+## RAG Assistant
+
+The live RAG assistant is deployed on Streamlit Community Cloud: **[torus-rag-assistant.streamlit.app](https://torus-rag-assistant.streamlit.app/)**
+
+A retrieval-augmented generation chatbot built on top of the project's own documentation and codebase. It answers questions strictly from a FAISS-indexed knowledge base, and explicitly declines to guess or provide clinical advice when a question falls outside scope — since all data in this project is synthetic and non-PHI.
+
+**How it works:**
+1. Project docs/code are chunked and embedded with `sentence-transformers/all-MiniLM-L6-v2`.
+2. Embeddings are stored in a local FAISS vector index (`rag_assistant/faiss_index/`).
+3. On each question, the top-k relevant chunks are retrieved and passed as context to `Qwen/Qwen2.5-7B-Instruct`, served via Hugging Face's Inference Providers, through a LangChain RAG chain.
+4. A system prompt enforces grounded, non-clinical answers only.
+
+FAISS was chosen over a hosted vector database (e.g. pgvector) intentionally: the knowledge base is small and static, and a local index avoids exposing database credentials from a public Streamlit app while keeping the deployment self-contained.
+
+**Run it locally:**
+```bash
+pip install -r rag_assistant/requirements.txt
+python rag_assistant/build_vector_store.py   # builds the FAISS index
+$env:HUGGINGFACEHUB_API_TOKEN = "your_token_here"
+streamlit run rag_assistant/streamlit_app.py
+```
+
+## Follow-up Prediction Model
+
+Two models are trained and compared for predicting patient follow-up outcomes (`04_build_modeling_dataset.ipynb`, `05_train_followup_prediction.ipynb`), with experiment runs tracked via **MLflow** — logging metrics and artifacts across training runs to select the best-performing model.
 
 ## Setup (full pipeline)
 
@@ -108,3 +140,4 @@ The Isolation Forest model correctly and consistently flags **DEV-002** as the h
 
 - [ ] Alerting layer (Slack/email) when a device's anomaly rate crosses a threshold
 - [ ] GitHub Actions CI to lint/test the DAG and data generators on every push
+- [ ] Integrate the RAG assistant, anomaly dashboard, and follow-up prediction results into a single unified Streamlit app
