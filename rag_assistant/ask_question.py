@@ -53,7 +53,7 @@ EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 # catalog. See module docstring for how to debug/swap this if it
 # ever stops working again.
 HF_MODEL_REPO_ID = "Qwen/Qwen2.5-7B-Instruct-1M"
-HF_PROVIDER = "auto"
+HF_PROVIDER = "together"
 TOP_K = 4
 
 
